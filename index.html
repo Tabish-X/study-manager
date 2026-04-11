@@ -9,34 +9,33 @@
 
 <body>
 
-<div class="container">
-
-  <header>
-    <h1>Personal Study Manager</h1>
-
-    <!-- Account icon — top-right on mobile, far-right on desktop -->
-    <div class="account-wrapper" id="account-wrapper">
-      <button class="account-icon-btn" id="account-btn" aria-label="Account">
-        <span id="account-initials">?</span>
-      </button>
-      <div class="account-dropdown" id="account-dropdown">
-        <div class="account-avatar-large">
-          <span id="dropdown-initials"></span>
-        </div>
-        <p class="dropdown-name"  id="dropdown-name">Loading…</p>
-        <p class="dropdown-email" id="dropdown-email"></p>
-        <button id="logout-btn" class="logout-dropdown-btn">Logout</button>
+<!-- Top bar: title + profile icon -->
+<div class="topbar">
+  <h1>Personal Study Manager</h1>
+  <div class="account-wrapper" id="account-wrapper">
+    <button class="account-icon-btn" id="account-btn" aria-label="Account">
+      <span id="account-initials">?</span>
+    </button>
+    <div class="account-dropdown" id="account-dropdown">
+      <div class="account-avatar-large">
+        <span id="dropdown-initials"></span>
       </div>
+      <p class="dropdown-name"  id="dropdown-name">Loading…</p>
+      <p class="dropdown-email" id="dropdown-email"></p>
+      <button id="logout-btn" class="logout-dropdown-btn">Logout</button>
     </div>
+  </div>
+</div>
 
-    <!-- Nav buttons -->
-    <nav class="nav-container">
-      <button class="nav-btn active" data-section="subjects">Subjects</button>
-      <button class="nav-btn" data-section="topics">Topics</button>
-      <button class="nav-btn" data-section="notes">Notes</button>
-      <button class="nav-btn" data-section="files">Files</button>
-    </nav>
-  </header>
+<!-- Nav below topbar -->
+<nav class="nav-container">
+  <button class="nav-btn active" data-section="subjects">Subjects</button>
+  <button class="nav-btn" data-section="topics">Topics</button>
+  <button class="nav-btn" data-section="notes">Notes</button>
+  <button class="nav-btn" data-section="files">Files</button>
+</nav>
+
+<div class="container">
 
   <section id="subjects-section" class="content-section active">
     <h2>Add New Subject</h2>
@@ -64,7 +63,10 @@
   <section id="notes-section" class="content-section">
     <h2>Add Note</h2>
     <div class="form-group">
-      <select id="note-subject-selector"></select>
+      <select id="note-subject-selector"><option value="">-- Select Subject --</option></select>
+    </div>
+    <div class="form-group">
+      <select id="note-topic-selector"><option value="">-- Select Topic --</option></select>
     </div>
     <div class="form-group">
       <input type="text" id="note-title" placeholder="Note title">
@@ -79,7 +81,6 @@
 
   <section id="files-section" class="content-section">
     <h2>Upload Files</h2>
-    <p style="color:#888;font-size:0.9rem;margin-bottom:10px">⚠️ Max file size: 900 KB per file</p>
     <div class="form-group">
       <select id="subject-selector"></select>
     </div>
@@ -92,6 +93,31 @@
     <div id="uploaded-files-list"></div>
   </section>
 
+</div>
+
+<!-- Edit Note Modal -->
+<div id="edit-modal" style="
+    display:none;position:fixed;top:0;left:0;width:100%;height:100%;
+    background:rgba(0,0,0,0.6);z-index:8000;align-items:center;justify-content:center;">
+  <div style="background:white;border-radius:12px;padding:24px;width:min(94%,520px);
+      display:flex;flex-direction:column;gap:14px;box-shadow:0 8px 40px rgba(0,0,0,0.2);">
+    <h2 style="margin:0;color:#333;">Edit Note</h2>
+    <input id="edit-note-title" type="text" placeholder="Note title"
+      style="width:100%;padding:10px;border:1px solid #ddd;border-radius:6px;font-size:1rem;">
+    <textarea id="edit-note-content" placeholder="Note content…"
+      style="width:100%;padding:10px;border:1px solid #ddd;border-radius:6px;
+        font-size:1rem;min-height:140px;resize:vertical;"></textarea>
+    <div style="display:flex;gap:10px;justify-content:flex-end;">
+      <button onclick="closeEditModal()"
+        style="background:#aaa;color:white;border:none;padding:9px 18px;border-radius:6px;cursor:pointer;">
+        Cancel
+      </button>
+      <button onclick="saveEditedNote()"
+        style="background:#4a6fa5;color:white;border:none;padding:9px 18px;border-radius:6px;cursor:pointer;font-weight:600;">
+        Save
+      </button>
+    </div>
+  </div>
 </div>
 
 <script type="module">
@@ -112,51 +138,33 @@
   const app  = initializeApp(firebaseConfig);
   const auth = getAuth(app);
   const db   = getFirestore(app);
-
   window.firestoreDb = db;
 
   onAuthStateChanged(auth, async (user) => {
-    if (!user) {
-      window.location.href = "login.html";
-      return;
-    }
+    if (!user) { window.location.href = "login.html"; return; }
     window.currentUser = user;
-
-    // Fetch stored name from Firestore
     try {
       const snap     = await getDoc(doc(db, "users", user.uid));
       const fullName = snap.exists() ? (snap.data().fullName || user.email) : user.email;
-      const initials = fullName
-        .split(" ")
-        .filter(Boolean)
-        .map(w => w[0])
-        .join("")
-        .toUpperCase()
-        .slice(0, 2);
-
+      const initials = fullName.split(" ").filter(Boolean)
+        .map(w => w[0]).join("").toUpperCase().slice(0, 2);
       document.getElementById("account-initials").textContent  = initials;
       document.getElementById("dropdown-initials").textContent = initials;
       document.getElementById("dropdown-name").textContent     = fullName;
       document.getElementById("dropdown-email").textContent    = user.email;
     } catch (_) {
-      document.getElementById("account-initials").textContent  = "?";
-      document.getElementById("dropdown-name").textContent     = user.email;
-      document.getElementById("dropdown-email").textContent    = "";
+      document.getElementById("account-initials").textContent = "?";
+      document.getElementById("dropdown-name").textContent    = user.email;
     }
   });
 
-  // Toggle dropdown on icon click
   document.getElementById("account-btn").addEventListener("click", (e) => {
     e.stopPropagation();
     document.getElementById("account-dropdown").classList.toggle("open");
   });
-
-  // Close dropdown when clicking anywhere else
   document.addEventListener("click", () => {
     document.getElementById("account-dropdown").classList.remove("open");
   });
-
-  // Logout
   document.getElementById("logout-btn").addEventListener("click", () => {
     signOut(auth).then(() => { window.location.href = "login.html"; });
   });
