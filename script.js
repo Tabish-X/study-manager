@@ -54,7 +54,6 @@ document.body.insertAdjacentHTML("beforeend", `
     cursor: text;
     transform-origin: 0% 0%;
   }
-  /* Make text selectable and visible on hover */
   .pdf-text-layer span::selection {
     background: rgba(0, 0, 255, 0.3);
     color: transparent;
@@ -93,15 +92,24 @@ async function removeItem(colName, firestoreId) {
 }
 
 /* ── Duplicate check ─────────────────────────────────────────────────── */
-// Returns true if an item with the same value for `field` already exists (case-insensitive)
-async function isDuplicate(colName, field, value) {
+async function isDuplicate(colName, field, value, subjectId = null) {
   const items = await getItems(colName);
-  return items.some(item =>
-    (item[field] || "").trim().toLowerCase() === value.trim().toLowerCase()
-  );
+  return items.some(item => {
+    const nameMatch = (item[field] || "").trim().toLowerCase() === value.trim().toLowerCase();
+    if (subjectId) return nameMatch && item.subjectId === subjectId;
+    return nameMatch;
+  });
 }
 
-/* ── File → Base64 ───────────────────────────────────────────────────── */
+/* ── Date formatter ──────────────────────────────────────────────────── */
+function formatDate(ts) {
+  if (!ts) return "";
+  return new Date(ts).toLocaleDateString("en-IN", {
+    day: "numeric", month: "short", year: "numeric"
+  });
+}
+
+/* ── File to Base64 ──────────────────────────────────────────────────── */
 function fileToBase64(file) {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
@@ -150,7 +158,6 @@ async function loadPdfJs() {
     s.onload = resolve; s.onerror = reject;
     document.head.appendChild(s);
   });
-  // Also load the text layer CSS from PDF.js CDN
   const link = document.createElement("link");
   link.rel  = "stylesheet";
   link.href = "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf_viewer.min.css";
@@ -159,79 +166,51 @@ async function loadPdfJs() {
     "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js";
 }
 
-/* ── PDF viewer — canvas + text layer ───────────────────────────────── */
+/* ── PDF viewer ──────────────────────────────────────────────────────── */
 async function renderPDF(base64DataUrl, name) {
   openModal(name, `<p style="color:white;padding:40px;font-size:1.1rem;">Rendering PDF…</p>`);
   try {
     await loadPdfJs();
-
-    // Decode base64 → Uint8Array
     const base64  = base64DataUrl.split(",")[1];
     const binary  = atob(base64);
     const bytes   = new Uint8Array(binary.length);
     for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
-
     const pdf = await window.pdfjsLib.getDocument({ data: bytes }).promise;
-
     const modalBody = document.getElementById("modal-body");
     modalBody.innerHTML = "";
-
-    // devicePixelRatio ensures sharp rendering on retina screens
     const dpr   = window.devicePixelRatio || 1;
-    // Base scale: render at screen resolution × devicePixelRatio
-    // This gives true native resolution — text stays perfectly sharp at any browser zoom
     const SCALE = dpr * 2;
-
     for (let pageNum = 1; pageNum <= pdf.numPages; pageNum++) {
       const page     = await pdf.getPage(pageNum);
       const viewport = page.getViewport({ scale: SCALE });
-
-      // Wrapper holds canvas + text layer together
-      const wrapper = document.createElement("div");
+      const wrapper  = document.createElement("div");
       wrapper.className = "pdf-page-wrapper";
-      // CSS width = full container, height proportional
       const cssWidth  = Math.min(900, modalBody.clientWidth - 40);
       const cssHeight = cssWidth * (viewport.height / viewport.width);
       wrapper.style.width  = cssWidth + "px";
       wrapper.style.height = cssHeight + "px";
-
-      // ── Canvas (pixel-perfect background) ──
       const canvas = document.createElement("canvas");
-      canvas.width  = viewport.width;   // high-res pixels
+      canvas.width  = viewport.width;
       canvas.height = viewport.height;
       wrapper.appendChild(canvas);
-
-      // ── Text layer (real selectable text on top) ──
       const textLayerDiv = document.createElement("div");
       textLayerDiv.className = "pdf-text-layer";
       wrapper.appendChild(textLayerDiv);
-
       modalBody.appendChild(wrapper);
-
-      // Render the canvas
-      await page.render({
-        canvasContext: canvas.getContext("2d"),
-        viewport
-      }).promise;
-
-      // Render the text layer — this is what makes text crisp & selectable
-      const textContent = await page.getTextContent();
+      await page.render({ canvasContext: canvas.getContext("2d"), viewport }).promise;
+      const textContent  = await page.getTextContent();
       const textViewport = page.getViewport({ scale: SCALE });
-
       window.pdfjsLib.renderTextLayer({
         textContentSource: textContent,
-        container:         textLayerDiv,
-        viewport:          textViewport,
-        textDivs:          []
+        container: textLayerDiv,
+        viewport:  textViewport,
+        textDivs:  []
       });
     }
-
   } catch (err) {
     console.error("PDF render error:", err);
-    openModal(name, `
-      <div style="padding:40px;text-align:center;">
-        <p style="color:white;font-size:1.1rem;margin-bottom:20px;">Could not render PDF.</p>
-      </div>`);
+    openModal(name, `<div style="padding:40px;text-align:center;">
+      <p style="color:white;font-size:1.1rem;">Could not render PDF.</p></div>`);
   }
 }
 
@@ -283,6 +262,41 @@ document.querySelectorAll(".nav-btn").forEach(btn => {
   };
 });
 
+/* ── Populate a subject <select> ─────────────────────────────────────── */
+function populateSelector(selId, subjects) {
+  const sel = document.getElementById(selId);
+  if (!sel) return;
+  sel.innerHTML = '<option value="">-- Select Subject --</option>';
+  subjects.forEach(s => {
+    const opt = document.createElement("option");
+    opt.value = s.firestoreId; opt.textContent = s.name;
+    sel.appendChild(opt);
+  });
+}
+
+/* ── Group items by subjectId ────────────────────────────────────────── */
+function groupBySubject(items, subjectMap) {
+  const grouped = {};
+  const order   = [];
+  items.forEach(item => {
+    const key = item.subjectId || "__none__";
+    if (!grouped[key]) { grouped[key] = []; order.push(key); }
+    grouped[key].push(item);
+  });
+  return order.map(key => ({
+    subjectName: key === "__none__" ? "General" : (subjectMap[key] || "Unknown Subject"),
+    items: grouped[key]
+  }));
+}
+
+/* ── Subject group header element ────────────────────────────────────── */
+function makeGroupHeader(name) {
+  const h = document.createElement("div");
+  h.className = "subject-group-header";
+  h.textContent = name;
+  return h;
+}
+
 /* ── SUBJECTS ────────────────────────────────────────────────────────── */
 document.getElementById("add-subject-btn").onclick = async () => {
   const name = document.getElementById("subject-name").value.trim();
@@ -292,6 +306,7 @@ document.getElementById("add-subject-btn").onclick = async () => {
   document.getElementById("subject-name").value = "";
   renderSubjects();
 };
+
 async function renderSubjects() {
   const box = document.getElementById("subjects-list");
   box.innerHTML = "<em style='color:#999'>Loading…</em>";
@@ -305,78 +320,106 @@ async function renderSubjects() {
       <button class="delete-file" onclick="deleteSubject('${s.firestoreId}')">Delete</button>`;
     box.appendChild(div);
   });
-  updateSelector(items);
+  populateSelector("subject-selector",       items);
+  populateSelector("topic-subject-selector", items);
+  populateSelector("note-subject-selector",  items);
 }
-window.deleteSubject = async (id) => { await removeItem("subjects", id); renderSubjects(); };
+
+window.deleteSubject = async (id) => {
+  await removeItem("subjects", id);
+  renderSubjects();
+  renderTopics();
+  renderNotes();
+  renderFiles();
+};
 
 /* ── TOPICS ──────────────────────────────────────────────────────────── */
 document.getElementById("add-topic-btn").onclick = async () => {
-  const name = document.getElementById("topic-name").value.trim();
-  if (!name) return alert("Enter topic name");
-  if (await isDuplicate("topics", "name", name)) return alert("Already exists");
-  await addItem("topics", { name });
+  const subjectId = document.getElementById("topic-subject-selector").value;
+  const name      = document.getElementById("topic-name").value.trim();
+  if (!subjectId) return alert("Select a subject first");
+  if (!name)      return alert("Enter topic name");
+  if (await isDuplicate("topics", "name", name, subjectId)) return alert("Already exists");
+  await addItem("topics", { name, subjectId });
   document.getElementById("topic-name").value = "";
   renderTopics();
 };
+
 async function renderTopics() {
   const box = document.getElementById("topics-list");
   box.innerHTML = "<em style='color:#999'>Loading…</em>";
-  const items = await getItems("topics");
+  const [items, subjects] = await Promise.all([getItems("topics"), getItems("subjects")]);
+  const subjectMap = {};
+  subjects.forEach(s => { subjectMap[s.firestoreId] = s.name; });
+
   box.innerHTML = "";
-  if (!items.length) box.innerHTML = "<p style='color:#999;padding:12px'>No topics yet.</p>";
-  items.forEach(t => {
-    const div = document.createElement("div");
-    div.className = "list-item";
-    div.innerHTML = `<span>${t.name}</span>
-      <button class="delete-file" onclick="deleteTopic('${t.firestoreId}')">Delete</button>`;
-    box.appendChild(div);
+  if (!items.length) {
+    box.innerHTML = "<p style='color:#999;padding:12px'>No topics yet.</p>";
+    return;
+  }
+
+  groupBySubject(items, subjectMap).forEach(({ subjectName, items: group }) => {
+    box.appendChild(makeGroupHeader(subjectName));
+    group.forEach(t => {
+      const div = document.createElement("div");
+      div.className = "list-item";
+      div.innerHTML = `<span>${t.name}</span>
+        <button class="delete-file" onclick="deleteTopic('${t.firestoreId}')">Delete</button>`;
+      box.appendChild(div);
+    });
   });
 }
+
 window.deleteTopic = async (id) => { await removeItem("topics", id); renderTopics(); };
 
 /* ── NOTES ───────────────────────────────────────────────────────────── */
 document.getElementById("add-note-btn").onclick = async () => {
-  const title   = document.getElementById("note-title").value.trim();
-  const content = document.getElementById("note-content").value.trim();
+  const subjectId = document.getElementById("note-subject-selector").value;
+  const title     = document.getElementById("note-title").value.trim();
+  const content   = document.getElementById("note-content").value.trim();
+  if (!subjectId)         return alert("Select a subject first");
   if (!title || !content) return alert("Fill both fields");
-  if (await isDuplicate("notes", "title", title)) return alert("Already exists");
-  await addItem("notes", { title, content });
+  if (await isDuplicate("notes", "title", title, subjectId)) return alert("Already exists");
+  await addItem("notes", { title, content, subjectId });
   document.getElementById("note-title").value   = "";
   document.getElementById("note-content").value = "";
   renderNotes();
 };
+
 async function renderNotes() {
   const box = document.getElementById("notes-list");
   box.innerHTML = "<em style='color:#999'>Loading…</em>";
-  const items = await getItems("notes");
+  // orderBy("createdAt") is ascending = oldest first ✓
+  const [items, subjects] = await Promise.all([getItems("notes"), getItems("subjects")]);
+  const subjectMap = {};
+  subjects.forEach(s => { subjectMap[s.firestoreId] = s.name; });
+
   box.innerHTML = "";
-  if (!items.length) box.innerHTML = "<p style='color:#999;padding:12px'>No notes yet.</p>";
-  items.forEach(n => {
-    const div = document.createElement("div");
-    div.className = "list-item";
-    div.innerHTML = `
-      <div>
-        <b>${n.title}</b>
-        <p style="margin-top:5px;color:#555">${n.content}</p>
-      </div>
-      <button class="delete-file" onclick="deleteNote('${n.firestoreId}')">Delete</button>`;
-    box.appendChild(div);
+  if (!items.length) {
+    box.innerHTML = "<p style='color:#999;padding:12px'>No notes yet.</p>";
+    return;
+  }
+
+  groupBySubject(items, subjectMap).forEach(({ subjectName, items: group }) => {
+    box.appendChild(makeGroupHeader(subjectName));
+    group.forEach(n => {
+      const div = document.createElement("div");
+      div.className = "list-item";
+      div.innerHTML = `
+        <div>
+          <b>${n.title}</b>
+          <p style="margin-top:5px;color:#555">${n.content}</p>
+          <small class="note-date">Added: ${formatDate(n.createdAt)}</small>
+        </div>
+        <button class="delete-file" onclick="deleteNote('${n.firestoreId}')">Delete</button>`;
+      box.appendChild(div);
+    });
   });
 }
+
 window.deleteNote = async (id) => { await removeItem("notes", id); renderNotes(); };
 
-/* ── Subject selector ────────────────────────────────────────────────── */
-function updateSelector(items) {
-  const sel = document.getElementById("subject-selector");
-  sel.innerHTML = '<option value=""> SELECT SUBJECT </option>';
-  items.forEach(s => {
-    const opt = document.createElement("option");
-    opt.value = s.firestoreId; opt.textContent = s.name;
-    sel.appendChild(opt);
-  });
-}
-
-/* ── Upload ──────────────────────────────────────────────────────────── */
+/* ── Upload status ───────────────────────────────────────────────────── */
 function setStatus(msg, isError = false) {
   const el = document.getElementById("upload-status");
   if (!el) return;
@@ -384,6 +427,7 @@ function setStatus(msg, isError = false) {
   el.style.color = isError ? "#dc3545" : "#4a6fa5";
 }
 
+/* ── UPLOAD ──────────────────────────────────────────────────────────── */
 document.getElementById("upload-files-btn").onclick = async () => {
   const fileInput = document.getElementById("file-upload");
   const subjectId = document.getElementById("subject-selector").value;
@@ -396,7 +440,6 @@ document.getElementById("upload-files-btn").onclick = async () => {
   setStatus("Checking for duplicates…");
 
   try {
-    // Check all files for duplicates before uploading any
     for (const file of files) {
       if (await isDuplicate("files", "name", file.name)) {
         setStatus(`❌ "${file.name}" already exists. Remove it and try again.`, true);
@@ -404,7 +447,6 @@ document.getElementById("upload-files-btn").onclick = async () => {
         return;
       }
     }
-
     for (let i = 0; i < files.length; i++) {
       const file = files[i];
       setStatus(`Uploading ${i + 1} of ${files.length}: ${file.name}…`);
@@ -428,46 +470,56 @@ document.getElementById("upload-files-btn").onclick = async () => {
   }
 };
 
-/* ── Render files ────────────────────────────────────────────────────── */
+/* ── RENDER FILES (grouped by subject) ───────────────────────────────── */
 async function renderFiles() {
   const box = document.getElementById("uploaded-files-list");
   box.innerHTML = "<em style='color:#999'>Loading…</em>";
-  let items;
-  try { items = await getItems("files"); }
-  catch (e) {
+
+  let items, subjects;
+  try {
+    [items, subjects] = await Promise.all([getItems("files"), getItems("subjects")]);
+  } catch (e) {
     box.innerHTML = "<p style='color:red'>Failed to load files: " + e.message + "</p>";
     return;
   }
+
+  const subjectMap = {};
+  subjects.forEach(s => { subjectMap[s.firestoreId] = s.name; });
+
+  const validItems = items.filter(f => f.totalChunks);
   box.innerHTML = "";
-  if (!items.length) {
+  if (!validItems.length) {
     box.innerHTML = "<p style='color:#999;padding:12px'>No files uploaded yet.</p>";
     return;
   }
-  items.forEach(f => {
-    if (!f.totalChunks) return;
-    const sizeText = f.bytes ? `(${(f.bytes / 1024).toFixed(1)} KB)` : "";
-    const safeName = (f.name     || "").replace(/\\/g,"\\\\").replace(/'/g,"\\'");
-    const safeMime = (f.mimeType || "").replace(/\\/g,"\\\\").replace(/'/g,"\\'");
-    const div = document.createElement("div");
-    div.className = "file-item";
-    div.innerHTML = `
-      <span>${f.name} <small style="color:#999">${sizeText}</small></span>
-      <div class="file-actions">
-        <button class="view-file"
-          onclick="viewFile('${f.firestoreId}','${safeName}','${safeMime}',${f.totalChunks})">
-          View
-        </button>
-        <button style="background:#f4c20d;color:black;border:none;padding:8px 14px;
-            border-radius:4px;cursor:pointer;font-weight:600;"
-          onclick="downloadFile('${f.firestoreId}','${safeName}',${f.totalChunks})">
-          Download
-        </button>
-        <button class="delete-file"
-          onclick="deleteFile('${f.firestoreId}',${f.totalChunks})">
-          Delete
-        </button>
-      </div>`;
-    box.appendChild(div);
+
+  groupBySubject(validItems, subjectMap).forEach(({ subjectName, items: group }) => {
+    box.appendChild(makeGroupHeader(subjectName));
+    group.forEach(f => {
+      const sizeText = f.bytes ? `(${(f.bytes / 1024).toFixed(1)} KB)` : "";
+      const safeName = (f.name     || "").replace(/\\/g,"\\\\").replace(/'/g,"\\'");
+      const safeMime = (f.mimeType || "").replace(/\\/g,"\\\\").replace(/'/g,"\\'");
+      const div = document.createElement("div");
+      div.className = "file-item";
+      div.innerHTML = `
+        <span>${f.name} <small style="color:#999">${sizeText}</small></span>
+        <div class="file-actions">
+          <button class="view-file"
+            onclick="viewFile('${f.firestoreId}','${safeName}','${safeMime}',${f.totalChunks})">
+            View
+          </button>
+          <button style="background:#f4c20d;color:black;border:none;padding:8px 14px;
+              border-radius:4px;cursor:pointer;font-weight:600;"
+            onclick="downloadFile('${f.firestoreId}','${safeName}',${f.totalChunks})">
+            Download
+          </button>
+          <button class="delete-file"
+            onclick="deleteFile('${f.firestoreId}',${f.totalChunks})">
+            Delete
+          </button>
+        </div>`;
+      box.appendChild(div);
+    });
   });
 }
 
