@@ -13,13 +13,29 @@
 
   <header>
     <h1>Personal Study Manager</h1>
-    <div class="nav-container">
+
+    <!-- Account icon — top-right on mobile, far-right on desktop -->
+    <div class="account-wrapper" id="account-wrapper">
+      <button class="account-icon-btn" id="account-btn" aria-label="Account">
+        <span id="account-initials">?</span>
+      </button>
+      <div class="account-dropdown" id="account-dropdown">
+        <div class="account-avatar-large">
+          <span id="dropdown-initials"></span>
+        </div>
+        <p class="dropdown-name"  id="dropdown-name">Loading…</p>
+        <p class="dropdown-email" id="dropdown-email"></p>
+        <button id="logout-btn" class="logout-dropdown-btn">Logout</button>
+      </div>
+    </div>
+
+    <!-- Nav buttons -->
+    <nav class="nav-container">
       <button class="nav-btn active" data-section="subjects">Subjects</button>
       <button class="nav-btn" data-section="topics">Topics</button>
       <button class="nav-btn" data-section="notes">Notes</button>
       <button class="nav-btn" data-section="files">Files</button>
-      <button id="logout-btn" class="nav-btn logout">Logout</button>
-    </div>
+    </nav>
   </header>
 
   <section id="subjects-section" class="content-section active">
@@ -35,6 +51,9 @@
   <section id="topics-section" class="content-section">
     <h2>Add Topic</h2>
     <div class="form-group">
+      <select id="topic-subject-selector"></select>
+    </div>
+    <div class="form-group">
       <input type="text" id="topic-name" placeholder="Topic name">
     </div>
     <button id="add-topic-btn">Add Topic</button>
@@ -44,6 +63,9 @@
 
   <section id="notes-section" class="content-section">
     <h2>Add Note</h2>
+    <div class="form-group">
+      <select id="note-subject-selector"></select>
+    </div>
     <div class="form-group">
       <input type="text" id="note-title" placeholder="Note title">
     </div>
@@ -57,6 +79,7 @@
 
   <section id="files-section" class="content-section">
     <h2>Upload Files</h2>
+    <p style="color:#888;font-size:0.9rem;margin-bottom:10px">⚠️ Max file size: 900 KB per file</p>
     <div class="form-group">
       <select id="subject-selector"></select>
     </div>
@@ -74,7 +97,7 @@
 <script type="module">
   import { initializeApp }                        from "https://www.gstatic.com/firebasejs/11.0.0/firebase-app.js";
   import { getAuth, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.0.0/firebase-auth.js";
-  import { getFirestore }                         from "https://www.gstatic.com/firebasejs/11.0.0/firebase-firestore.js";
+  import { getFirestore, doc, getDoc }            from "https://www.gstatic.com/firebasejs/11.0.0/firebase-firestore.js";
 
   const firebaseConfig = {
     apiKey:            "AIzaSyDZJ9XseeGuBVkmhb5-HrcwRSVAChXs8WI",
@@ -88,21 +111,54 @@
 
   const app  = initializeApp(firebaseConfig);
   const auth = getAuth(app);
+  const db   = getFirestore(app);
 
-  window.firestoreDb = getFirestore(app);
+  window.firestoreDb = db;
 
-  onAuthStateChanged(auth, (user) => {
+  onAuthStateChanged(auth, async (user) => {
     if (!user) {
       window.location.href = "login.html";
-    } else {
-      window.currentUser = user;
+      return;
+    }
+    window.currentUser = user;
+
+    // Fetch stored name from Firestore
+    try {
+      const snap     = await getDoc(doc(db, "users", user.uid));
+      const fullName = snap.exists() ? (snap.data().fullName || user.email) : user.email;
+      const initials = fullName
+        .split(" ")
+        .filter(Boolean)
+        .map(w => w[0])
+        .join("")
+        .toUpperCase()
+        .slice(0, 2);
+
+      document.getElementById("account-initials").textContent  = initials;
+      document.getElementById("dropdown-initials").textContent = initials;
+      document.getElementById("dropdown-name").textContent     = fullName;
+      document.getElementById("dropdown-email").textContent    = user.email;
+    } catch (_) {
+      document.getElementById("account-initials").textContent  = "?";
+      document.getElementById("dropdown-name").textContent     = user.email;
+      document.getElementById("dropdown-email").textContent    = "";
     }
   });
 
+  // Toggle dropdown on icon click
+  document.getElementById("account-btn").addEventListener("click", (e) => {
+    e.stopPropagation();
+    document.getElementById("account-dropdown").classList.toggle("open");
+  });
+
+  // Close dropdown when clicking anywhere else
+  document.addEventListener("click", () => {
+    document.getElementById("account-dropdown").classList.remove("open");
+  });
+
+  // Logout
   document.getElementById("logout-btn").addEventListener("click", () => {
-    signOut(auth).then(() => {
-      window.location.href = "login.html";
-    });
+    signOut(auth).then(() => { window.location.href = "login.html"; });
   });
 </script>
 
