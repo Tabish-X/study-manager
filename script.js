@@ -335,11 +335,14 @@ async function renderNotes() {
     const safeContent = (n.content || "").replace(/\\/g,"\\\\").replace(/'/g,"\\'").replace(/\n/g,"\\n");
     const div = document.createElement("div");
     div.className = "list-item";
+    const dateStr = n.createdAt
+      ? new Date(n.createdAt).toLocaleDateString("en-IN", { day:"numeric", month:"short", year:"numeric" })
+      : "";
     div.innerHTML = `
       <div>
         <b>${n.title}</b>
         <p style="margin-top:5px;color:#555;white-space:pre-wrap;">${n.content}</p>
-        ${meta ? `<span class="note-meta">${meta}</span>` : ""}
+        <span class="note-meta">${[meta, dateStr ? "📅 " + dateStr : ""].filter(Boolean).join(" · ")}</span>
       </div>
       <div class="item-actions">
         <button class="edit-note-btn"
@@ -462,30 +465,49 @@ async function renderFiles() {
     box.innerHTML = "<p style='color:red'>Failed to load files: " + e.message + "</p>";
     return;
   }
+
+  const validItems = items.filter(f => f.totalChunks);
   box.innerHTML = "";
-  if (!items.length) {
+  if (!validItems.length) {
     box.innerHTML = "<p style='color:#999;padding:12px'>No files uploaded yet.</p>";
     return;
   }
-  items.forEach(f => {
-    if (!f.totalChunks) return;
-    const sizeText = f.bytes ? `(${(f.bytes / 1024).toFixed(1)} KB)` : "";
-    const safeName = (f.name     || "").replace(/\\/g,"\\\\").replace(/'/g,"\\'");
-    const safeMime = (f.mimeType || "").replace(/\\/g,"\\\\").replace(/'/g,"\\'");
-    const div = document.createElement("div");
-    div.className = "file-item";
-    div.innerHTML = `
-      <span>${f.name} <small style="color:#999">${sizeText}</small></span>
-      <div class="file-actions">
-        <button class="view-file"
-          onclick="viewFile('${f.firestoreId}','${safeName}','${safeMime}',${f.totalChunks})">View</button>
-        <button style="background:#f4c20d;color:black;border:none;padding:8px 14px;
-            border-radius:4px;cursor:pointer;font-weight:600;"
-          onclick="downloadFile('${f.firestoreId}','${safeName}',${f.totalChunks})">Download</button>
-        <button class="delete-file"
-          onclick="deleteFile('${f.firestoreId}',${f.totalChunks})">Delete</button>
-      </div>`;
-    box.appendChild(div);
+
+  // Group by subjectId preserving insertion order
+  const grouped = {};
+  const order   = [];
+  validItems.forEach(f => {
+    const key = f.subjectId || "__none__";
+    if (!grouped[key]) { grouped[key] = []; order.push(key); }
+    grouped[key].push(f);
+  });
+
+  order.forEach(key => {
+    const subject = _subjects.find(s => s.firestoreId === key);
+    const header  = document.createElement("div");
+    header.className   = "subject-group-header";
+    header.textContent = subject ? subject.name : "No Subject";
+    box.appendChild(header);
+
+    grouped[key].forEach(f => {
+      const sizeText = f.bytes ? `(${(f.bytes / 1024).toFixed(1)} KB)` : "";
+      const safeName = (f.name     || "").replace(/\\/g,"\\\\").replace(/'/g,"\\'");
+      const safeMime = (f.mimeType || "").replace(/\\/g,"\\\\").replace(/'/g,"\\'");
+      const div = document.createElement("div");
+      div.className = "file-item";
+      div.innerHTML = `
+        <span>${f.name} <small style="color:#999">${sizeText}</small></span>
+        <div class="file-actions">
+          <button class="view-file"
+            onclick="viewFile('${f.firestoreId}','${safeName}','${safeMime}',${f.totalChunks})">View</button>
+          <button style="background:#f4c20d;color:black;border:none;padding:8px 14px;
+              border-radius:4px;cursor:pointer;font-weight:600;"
+            onclick="downloadFile('${f.firestoreId}','${safeName}',${f.totalChunks})">Download</button>
+          <button class="delete-file"
+            onclick="deleteFile('${f.firestoreId}',${f.totalChunks})">Delete</button>
+        </div>`;
+      box.appendChild(div);
+    });
   });
 }
 
