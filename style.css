@@ -19,51 +19,32 @@ body {
   color: var(--text-color);
 }
 
-/* ── Container ───────────────────────────────────────────────────────── */
-.container {
-  max-width: 1200px;
-  margin: auto;
-  padding: 12px;
-}
-
-/* ── Header ──────────────────────────────────────────────────────────── */
-/*
-  Mobile layout (CSS Grid):
-  ┌─────────────────────┬──────┐
-  │ h1                  │  👤  │
-  ├─────────────────────┴──────┤
-  │ nav buttons                │
-  └────────────────────────────┘
-*/
-header {
-  display: grid;
-  grid-template-areas:
-    "title account"
-    "nav   nav";
-  grid-template-columns: 1fr auto;
+/* ── Top bar: title + profile icon on same row ───────────────────────── */
+.topbar {
+  display: flex;
   align-items: center;
-  gap: 10px;
+  justify-content: space-between;
+  padding: 12px 16px;
+  background: white;
   border-bottom: 2px solid var(--primary-color);
-  margin-bottom: 20px;
-  padding-bottom: 12px;
+  position: sticky;
+  top: 0;
+  z-index: 100;
 }
 
-header h1 {
-  grid-area: title;
-  font-size: clamp(1rem, 5vw, 1.6rem);
+.topbar h1 {
+  font-size: clamp(1rem, 5vw, 1.5rem);
   color: var(--primary-color);
 }
 
-.account-wrapper {
-  grid-area: account;
-  position: relative;
-}
-
+/* ── Nav bar below topbar ────────────────────────────────────────────── */
 .nav-container {
-  grid-area: nav;
   display: flex;
   flex-wrap: wrap;
   gap: 8px;
+  padding: 10px 16px;
+  background: #eef2f7;
+  border-bottom: 1px solid #d0d9e8;
 }
 
 /* ── Nav buttons ─────────────────────────────────────────────────────── */
@@ -71,7 +52,7 @@ header h1 {
   background: var(--light-color);
   border: 1px solid var(--primary-color);
   color: var(--primary-color);
-  padding: 9px 14px;
+  padding: 9px 18px;
   border-radius: 4px;
   cursor: pointer;
   font-size: 0.9rem;
@@ -85,10 +66,14 @@ header h1 {
 }
 
 /* ── Account icon button ─────────────────────────────────────────────── */
+.account-wrapper {
+  position: relative;
+  flex-shrink: 0;
+}
+
 .account-icon-btn {
   width: 40px;
   height: 40px;
-  min-height: unset;
   border-radius: 50%;
   background: var(--primary-color);
   color: white;
@@ -100,7 +85,6 @@ header h1 {
   align-items: center;
   justify-content: center;
   letter-spacing: 0.03em;
-  flex-shrink: 0;
   transition: background 0.2s;
 }
 
@@ -108,9 +92,9 @@ header h1 {
   background: #3a5a8a;
 }
 
-/* ── Account dropdown card ───────────────────────────────────────────── */
+/* ── Account dropdown ────────────────────────────────────────────────── */
 .account-dropdown {
-  display: none;               /* hidden by default */
+  display: none;
   position: absolute;
   top: calc(100% + 10px);
   right: 0;
@@ -143,7 +127,6 @@ header h1 {
   align-items: center;
   justify-content: center;
   margin: 0 auto 4px;
-  letter-spacing: 0.03em;
 }
 
 .dropdown-name {
@@ -174,8 +157,13 @@ header h1 {
   margin-top: 4px;
 }
 
-.logout-dropdown-btn:hover {
-  background: #c82333;
+.logout-dropdown-btn:hover { background: #c82333; }
+
+/* ── Main container ──────────────────────────────────────────────────── */
+.container {
+  max-width: 1200px;
+  margin: auto;
+  padding: 16px;
 }
 
 /* ── Content sections ────────────────────────────────────────────────── */
@@ -184,45 +172,29 @@ header h1 {
   background: white;
   padding: 16px;
   border-radius: var(--border-radius);
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 2px 10px rgba(0,0,0,0.1);
   margin-bottom: 20px;
 }
 
-.content-section.active {
-  display: block;
-}
+.content-section.active { display: block; }
 
-.content-section h2 {
-  font-size: clamp(1rem, 4vw, 1.3rem);
-  margin-bottom: 12px;
-}
-
-.content-section h3 {
-  font-size: clamp(0.95rem, 3.5vw, 1.1rem);
-}
+.content-section h2 { font-size: clamp(1rem, 4vw, 1.3rem); margin-bottom: 12px; }
+.content-section h3 { font-size: clamp(0.95rem, 3.5vw, 1.1rem); }
 
 /* ── Forms ───────────────────────────────────────────────────────────── */
-.form-group {
-  margin-bottom: 10px;
-}
+.form-group { margin-bottom: 10px; }
 
-input,
-textarea,
-select {
+input, textarea, select {
   width: 100%;
   padding: 10px;
   border: 1px solid #ddd;
   border-radius: 4px;
-  /* Prevents iOS zoom on focus (must be ≥ 16px) */
   font-size: max(16px, 1rem);
 }
 
-textarea {
-  min-height: 120px;
-  resize: vertical;
-}
+textarea { min-height: 120px; resize: vertical; }
 
-/* ── Buttons (general) ───────────────────────────────────────────────── */
+/* ── Buttons ─────────────────────────────────────────────────────────── */
 button {
   background: var(--primary-color);
   color: white;
@@ -234,20 +206,12 @@ button {
   min-height: 40px;
 }
 
-.delete-file {
-  background: #dc3545;
-}
+.delete-file  { background: #dc3545; }
+.download-file { background: var(--accent-color); color: black; }
+.view-file    { background: var(--secondary-color); }
+.edit-note-btn { background: #5a9e6f; }
 
-.download-file {
-  background: var(--accent-color);
-  color: black;
-}
-
-.view-file {
-  background: var(--secondary-color);
-}
-
-/* ── List items (Subjects / Topics / Notes) ──────────────────────────── */
+/* ── List items ──────────────────────────────────────────────────────── */
 .list-item {
   display: flex;
   justify-content: space-between;
@@ -258,23 +222,29 @@ button {
 }
 
 .list-item span,
-.list-item > div {
-  flex: 1;
-  min-width: 0;
-  word-break: break-word;
-}
+.list-item > div { flex: 1; min-width: 0; word-break: break-word; }
 
-.list-item button {
-  flex-shrink: 0;
-}
+.list-item .item-actions { display: flex; gap: 8px; flex-shrink: 0; }
 
-/* ── Note date ───────────────────────────────────────────────────────── */
-.note-date {
-  display: block;
+/* ── Note meta ───────────────────────────────────────────────────────── */
+.note-meta {
   font-size: 0.78rem;
   color: #aaa;
-  margin-top: 5px;
+  margin-top: 4px;
 }
+
+/* ── Subject group headers ───────────────────────────────────────────── */
+.subject-group-header {
+  background: var(--primary-color);
+  color: white;
+  padding: 8px 12px;
+  border-radius: 4px;
+  margin-top: 16px;
+  font-weight: 600;
+  font-size: 0.92rem;
+}
+
+.subject-group-header:first-child { margin-top: 8px; }
 
 /* ── File items ──────────────────────────────────────────────────────── */
 .file-item {
@@ -287,10 +257,7 @@ button {
   border-radius: 4px;
 }
 
-.file-item > span {
-  word-break: break-all;
-  font-size: 0.95rem;
-}
+.file-item > span { word-break: break-all; font-size: 0.95rem; }
 
 .file-actions {
   display: flex;
@@ -318,56 +285,12 @@ button {
   min-height: 40px;
 }
 
-/* ── Subject group headers ───────────────────────────────────────────── */
-.subject-group-header {
-  background: var(--primary-color);
-  color: white;
-  padding: 8px 12px;
-  border-radius: 4px;
-  margin-top: 16px;
-  font-weight: 600;
-  font-size: 0.92rem;
-  letter-spacing: 0.02em;
-}
-
-.subject-group-header:first-child {
-  margin-top: 8px;
-}
-
-/* ── Desktop (≥ 600px): switch to single flex row ────────────────────── */
+/* ── Desktop ─────────────────────────────────────────────────────────── */
 @media (min-width: 600px) {
-  .container {
-    padding: 20px;
-  }
-
-  /*
-    Desktop layout (Flexbox):
-    [h1]   [nav buttons …]   [👤]
-  */
-  header {
-    display: flex;
-    flex-direction: row;
-    align-items: center;
-    gap: 16px;
-  }
-
-  header h1 {
-    flex-shrink: 0;
-  }
-
-  .nav-container {
-    flex: 1;
-    justify-content: flex-end;
-    flex-wrap: nowrap;
-  }
-
-  .account-wrapper {
-    flex-shrink: 0;
-  }
-
-  .content-section {
-    padding: 20px;
-  }
+  .topbar { padding: 14px 28px; }
+  .nav-container { padding: 10px 28px; gap: 10px; }
+  .container { padding: 20px 28px; }
+  .content-section { padding: 20px; }
 
   .file-item {
     flex-direction: row;
@@ -375,19 +298,41 @@ button {
     justify-content: space-between;
   }
 
-  .file-item > span {
-    flex: 1;
-    margin-right: 10px;
-    word-break: break-word;
-  }
-
-  .file-actions {
-    flex-wrap: nowrap;
-    flex-shrink: 0;
-  }
-
+  .file-item > span { flex: 1; margin-right: 10px; word-break: break-word; }
+  .file-actions { flex-wrap: nowrap; flex-shrink: 0; }
   .file-actions button,
-  .file-actions a.download-file {
-    flex: none;
-  }
+  .file-actions a.download-file { flex: none; }
+}
+
+/* ── PDF viewer text layer ───────────────────────────────────────────── */
+.pdf-page-wrapper {
+  position: relative;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.5);
+  background: white;
+  line-height: 0;
+}
+.pdf-page-wrapper canvas {
+  display: block;
+  width: 100% !important;
+  height: auto !important;
+}
+.pdf-text-layer {
+  position: absolute;
+  top: 0; left: 0;
+  width: 100%; height: 100%;
+  overflow: hidden;
+  opacity: 0.2;
+  line-height: 1;
+  pointer-events: auto;
+}
+.pdf-text-layer span {
+  color: transparent;
+  position: absolute;
+  white-space: pre;
+  cursor: text;
+  transform-origin: 0% 0%;
+}
+.pdf-text-layer span::selection {
+  background: rgba(0,0,255,0.3);
+  color: transparent;
 }
