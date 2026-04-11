@@ -27,27 +27,46 @@ body {
 }
 
 /* ── Header ──────────────────────────────────────────────────────────── */
+/*
+  Mobile layout (CSS Grid):
+  ┌─────────────────────┬──────┐
+  │ h1                  │  👤  │
+  ├─────────────────────┴──────┤
+  │ nav buttons                │
+  └────────────────────────────┘
+*/
 header {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
+  display: grid;
+  grid-template-areas:
+    "title account"
+    "nav   nav";
+  grid-template-columns: 1fr auto;
+  align-items: center;
+  gap: 10px;
   border-bottom: 2px solid var(--primary-color);
   margin-bottom: 20px;
   padding-bottom: 12px;
 }
 
 header h1 {
-  font-size: clamp(1.1rem, 5vw, 1.6rem);
+  grid-area: title;
+  font-size: clamp(1rem, 5vw, 1.6rem);
   color: var(--primary-color);
 }
 
-/* ── Nav ─────────────────────────────────────────────────────────────── */
+.account-wrapper {
+  grid-area: account;
+  position: relative;
+}
+
 .nav-container {
+  grid-area: nav;
   display: flex;
   flex-wrap: wrap;
   gap: 8px;
 }
 
+/* ── Nav buttons ─────────────────────────────────────────────────────── */
 .nav-btn {
   background: var(--light-color);
   border: 1px solid var(--primary-color);
@@ -56,7 +75,6 @@ header h1 {
   border-radius: 4px;
   cursor: pointer;
   font-size: 0.9rem;
-  /* minimum touch target */
   min-height: 40px;
   white-space: nowrap;
 }
@@ -66,14 +84,97 @@ header h1 {
   color: white;
 }
 
-.nav-btn.logout {
-  background: #dc3545;
-  border-color: #dc3545;
+/* ── Account icon button ─────────────────────────────────────────────── */
+.account-icon-btn {
+  width: 40px;
+  height: 40px;
+  min-height: unset;
+  border-radius: 50%;
+  background: var(--primary-color);
   color: white;
-  /* margin-left: auto only on desktop — on mobile it drops the button to its own misaligned row */
+  border: none;
+  font-size: 0.85rem;
+  font-weight: 700;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  letter-spacing: 0.03em;
+  flex-shrink: 0;
+  transition: background 0.2s;
 }
 
-.nav-btn.logout:hover {
+.account-icon-btn:hover {
+  background: #3a5a8a;
+}
+
+/* ── Account dropdown card ───────────────────────────────────────────── */
+.account-dropdown {
+  display: none;               /* hidden by default */
+  position: absolute;
+  top: calc(100% + 10px);
+  right: 0;
+  background: white;
+  border: 1px solid #ddd;
+  border-radius: 12px;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.15);
+  padding: 20px;
+  min-width: 220px;
+  z-index: 1000;
+  text-align: center;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+}
+
+.account-dropdown.open {
+  display: flex;
+}
+
+.account-avatar-large {
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  background: var(--primary-color);
+  color: white;
+  font-size: 1.3rem;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 4px;
+  letter-spacing: 0.03em;
+}
+
+.dropdown-name {
+  font-weight: 700;
+  font-size: 1rem;
+  color: var(--text-color);
+  word-break: break-word;
+}
+
+.dropdown-email {
+  font-size: 0.82rem;
+  color: #777;
+  word-break: break-all;
+  margin-bottom: 4px;
+}
+
+.logout-dropdown-btn {
+  width: 100%;
+  background: #dc3545;
+  color: white;
+  border: none;
+  padding: 9px 14px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 0.9rem;
+  font-weight: 600;
+  min-height: 40px;
+  margin-top: 4px;
+}
+
+.logout-dropdown-btn:hover {
   background: #c82333;
 }
 
@@ -112,8 +213,7 @@ select {
   padding: 10px;
   border: 1px solid #ddd;
   border-radius: 4px;
-  font-size: 1rem;
-  /* Prevents iOS zoom on focus */
+  /* Prevents iOS zoom on focus (must be ≥ 16px) */
   font-size: max(16px, 1rem);
 }
 
@@ -160,7 +260,7 @@ button {
 .list-item span,
 .list-item > div {
   flex: 1;
-  min-width: 0;          /* allows text to wrap instead of overflow */
+  min-width: 0;
   word-break: break-word;
 }
 
@@ -168,10 +268,18 @@ button {
   flex-shrink: 0;
 }
 
+/* ── Note date ───────────────────────────────────────────────────────── */
+.note-date {
+  display: block;
+  font-size: 0.78rem;
+  color: #aaa;
+  margin-top: 5px;
+}
+
 /* ── File items ──────────────────────────────────────────────────────── */
 .file-item {
   display: flex;
-  flex-direction: column;   /* stack name and buttons vertically on all sizes */
+  flex-direction: column;
   gap: 10px;
   background: #f0f0f0;
   padding: 12px;
@@ -210,15 +318,35 @@ button {
   min-height: 40px;
 }
 
-/* ── Tablet and up (≥ 600px) ─────────────────────────────────────────── */
+/* ── Subject group headers ───────────────────────────────────────────── */
+.subject-group-header {
+  background: var(--primary-color);
+  color: white;
+  padding: 8px 12px;
+  border-radius: 4px;
+  margin-top: 16px;
+  font-weight: 600;
+  font-size: 0.92rem;
+  letter-spacing: 0.02em;
+}
+
+.subject-group-header:first-child {
+  margin-top: 8px;
+}
+
+/* ── Desktop (≥ 600px): switch to single flex row ────────────────────── */
 @media (min-width: 600px) {
   .container {
     padding: 20px;
   }
 
+  /*
+    Desktop layout (Flexbox):
+    [h1]   [nav buttons …]   [👤]
+  */
   header {
+    display: flex;
     flex-direction: row;
-    justify-content: space-between;
     align-items: center;
     gap: 16px;
   }
@@ -228,18 +356,19 @@ button {
   }
 
   .nav-container {
+    flex: 1;
     justify-content: flex-end;
+    flex-wrap: nowrap;
   }
 
-  .nav-btn.logout {
-    margin-left: auto;
+  .account-wrapper {
+    flex-shrink: 0;
   }
 
   .content-section {
     padding: 20px;
   }
 
-  /* On wider screens, file items go back to side-by-side */
   .file-item {
     flex-direction: row;
     align-items: center;
