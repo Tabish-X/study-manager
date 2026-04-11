@@ -442,12 +442,12 @@ document.getElementById("upload-files-btn").onclick = async () => {
       const fileDocRef  = doc(window.firestoreDb, "users", window.currentUser.uid, "files", docRef.id);
       await setDoc(fileDocRef, { totalChunks }, { merge: true });
     }
-    setStatus("✅ Upload complete!");
+    setStatus("Upload complete!");
     fileInput.value = "";
     renderFiles();
   } catch (err) {
     console.error(err);
-    setStatus("❌ Upload failed: " + err.message, true);
+    setStatus("Upload failed: " + err.message, true);
   } finally {
     btn.disabled = false; btn.textContent = "Upload Files";
   }
