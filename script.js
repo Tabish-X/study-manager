@@ -342,7 +342,7 @@ async function renderNotes() {
       <div>
         <b>${n.title}</b>
         <p style="margin-top:5px;color:#555;white-space:pre-wrap;">${n.content}</p>
-        <span class="note-meta">${[meta, dateStr ? "📅 " + dateStr : ""].filter(Boolean).join(" · ")}</span>
+        <span class="note-meta">${[meta, dateStr ? "" + dateStr : ""].filter(Boolean).join(" · ")}</span>
       </div>
       <div class="item-actions">
         <button class="edit-note-btn"
