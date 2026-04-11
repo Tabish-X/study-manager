@@ -1,0 +1,275 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Login</title>
+    <style>
+
+        :root {
+            --bg: #f5f7fa;
+            --card: #ffffff;
+            --primary: #4a6fa5;
+            --primary-strong: #3a5580;
+            --text: #333;
+            --muted: #666;
+            --border: #ddd;
+        }
+        * {
+            box-sizing: border-box;
+        }
+        body {
+            margin: 0;
+            font-family: Inter, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+            background: linear-gradient(135deg, #dce7f0 0%, #e8eef5 100%);
+            color: var(--text);
+            min-height: 100vh;
+            display: grid;
+            place-items: center;
+            padding: 1.5rem;
+        }
+        .auth-shell {
+            width: min(100%, 920px);
+            background: var(--card);
+            border: 1px solid var(--border);
+            border-radius: 24px;
+            overflow: hidden;
+            box-shadow: 0 24px 80px rgba(15, 23, 42, 0.12);
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            min-height: 560px;
+        }
+        .auth-panel {
+            padding: 2.5rem;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            gap: 1.5rem;
+        }
+        .auth-panel--hero {
+            background: linear-gradient(180deg, #4a6fa5 0%, #3a5580 100%);
+            color: #ffffff;
+            padding: 2.5rem;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            gap: 1rem;
+        }
+        .auth-panel--hero h2 {
+            margin: 0;
+            font-size: clamp(2rem, 3vw, 2.6rem);
+            line-height: 1.05;
+        }
+        .auth-panel--hero p {
+            margin: 0;
+            color: rgba(255, 255, 255, 0.9);
+            max-width: 30rem;
+            line-height: 1.65;
+        }
+        .tabs {
+            display: flex;
+            gap: 0.5rem;
+            border: 1px solid var(--border);
+            border-radius: 999px;
+            padding: 0.25rem;
+            background: #f8fafc;
+            width: max-content;
+        }
+        .tab-button {
+            border: none;
+            background: transparent;
+            padding: 0.85rem 1.25rem;
+            border-radius: 999px;
+            cursor: pointer;
+            font-weight: 600;
+            color: var(--muted);
+        }
+        .tab-button.active {
+            background: var(--card);
+            color: var(--text);
+            box-shadow: 0 4px 10px rgba(15, 23, 42, 0.08);
+        }
+        .auth-form {
+            display: none;
+            gap: 1rem;
+        }
+        .auth-form.active {
+            display: grid;
+        }
+        .auth-form h1 {
+            margin: 0;
+            font-size: 1.75rem;
+        }
+        .field {
+            display: grid;
+            gap: 0.5rem;
+        }
+        .field label {
+            font-size: 0.95rem;
+            color: var(--muted);
+        }
+        .field input {
+            width: 100%;
+            padding: 0.95rem 1rem;
+            border: 1px solid var(--border);
+            border-radius: 0.9rem;
+            font-size: 1rem;
+            background: #f8fafc;
+            color: var(--text);
+        }
+        .field input:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.12);
+        }
+        .form-footer {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 0.95rem;
+            color: var(--muted);
+        }
+        .form-footer a {
+            color: var(--primary-strong);
+            text-decoration: none;
+        }
+        .submit-button {
+            border: none;
+            width: 100%;
+            padding: 0.95rem 1rem;
+            border-radius: 0.95rem;
+            background: var(--primary);
+            color: #ffffff;
+            font-weight: 700;
+            cursor: pointer;
+            transition: background 0.2s ease;
+        }
+        .submit-button:hover {
+            background: #3a5580;
+        }
+        .social-row {
+            display: grid;
+            gap: 0.75rem;
+        }
+        .social-button {
+            border: 1px solid var(--border);
+            border-radius: 0.95rem;
+            background: #ffffff;
+            padding: 0.85rem 1rem;
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            justify-content: center;
+            cursor: pointer;
+            color: var(--text);
+            font-weight: 600;
+        }
+        .social-button:hover {
+            background: #f8fafc;
+        }
+        .legal {
+            font-size: 0.85rem;
+            color: var(--muted);
+            line-height: 1.6;
+        }
+        .legal a {
+            color: var(--primary-strong);
+            text-decoration: none;
+        }
+        @media (max-width: 820px) {
+            .auth-shell {
+                grid-template-columns: 1fr;
+            }
+        }
+        @media (max-width: 560px) {
+            .auth-shell {
+                border-radius: 1.25rem;
+            }
+            .auth-panel, .auth-panel--hero {
+                padding: 1.5rem;
+            }
+            .tabs {
+                width: 100%;
+            }
+            /* Both tab buttons share width equally so neither looks bigger */
+            .tab-button {
+                flex: 1;
+                text-align: center;
+            }
+        }
+        .messageDiv {
+            background-color: hsl(327,90%,28%);
+            color: white;
+            padding: 10px 20px ;
+            margin: 10px ;
+            border-radius: 5px ;
+            font-size: 1rem ;
+            opacity: 0 ;
+            animation: fadeout 7s forwards ;
+        }
+    </style>
+</head>
+<body>
+    <div class="auth-shell">
+        <div class="auth-panel auth-panel--hero">
+            <div>
+                <h2>Access your account</h2>
+                <p>Sign in or create a new account to continue. Manage your profile, save preferences, and stay connected.</p>
+            </div>
+            <div class="tabs">
+                <button class="tab-button active" data-target="login-form">Login</button>
+                <button class="tab-button" data-target="signup-form">Signup</button>
+            </div>
+        </div>
+
+        <div class="auth-panel">
+            <form id="login-form" class="auth-form active">
+                <h1>Welcome back</h1>
+                <div id="signInMessage" class="messageDiv" style="display:none "></div>
+                <div class="field">
+                    <label for="login-email">Email</label>
+                    <input id="login-email" type="email" placeholder="" required />
+                </div>
+                <div class="field">
+                    <label for="login-password">Password</label>
+                    <input id="login-password" type="password" placeholder="" required />
+                </div>
+                <button type="submit" class="submit-button" id="submitLogin">Login</button>
+            </form>
+
+            <form id="signup-form" class="auth-form">
+                <h1>Create account</h1>
+                <div id="signUpMessage" class="messageDiv" style="display:none "></div>
+                <div class="field">
+                    <label for="signup-name">Full name</label>
+                    <input id="signup-name" type="text" placeholder="" required />
+                </div>
+                <div class="field">
+                    <label for="signup-email">Email</label>
+                    <input id="signup-email" type="email" placeholder="" required />
+                </div>
+                <div class="field">
+                    <label for="signup-password">Password</label>
+                    <input id="signup-password" type="password" placeholder="" required />
+                </div>
+                <button type="submit" class="submit-button" id="submitSignUp" >Signup</button>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        document.querySelectorAll('.tab-button').forEach(button => {
+            button.addEventListener('click', () => {
+                document.querySelectorAll('.tab-button').forEach(btn => btn.classList.remove('active'));
+                button.classList.add('active');
+                document.querySelectorAll('.auth-form').forEach(form => form.classList.remove('active'));
+                const target = document.getElementById(button.dataset.target);
+                if (target) {
+                    target.classList.add('active');
+                }
+            });
+        });
+    </script>
+    <script type="module" src="firebaseauth.js"></script>
+</body>
+</html>

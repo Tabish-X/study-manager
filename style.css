@@ -1,0 +1,264 @@
+:root {
+  --primary-color: #4a6fa5;
+  --secondary-color: #6b8cb8;
+  --accent-color: #f4c20d;
+  --text-color: #333;
+  --light-color: #f8f9fa;
+  --border-radius: 8px;
+}
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+body {
+  background: #f5f7fa;
+  color: var(--text-color);
+}
+
+/* ── Container ───────────────────────────────────────────────────────── */
+.container {
+  max-width: 1200px;
+  margin: auto;
+  padding: 12px;
+}
+
+/* ── Header ──────────────────────────────────────────────────────────── */
+header {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  border-bottom: 2px solid var(--primary-color);
+  margin-bottom: 20px;
+  padding-bottom: 12px;
+}
+
+header h1 {
+  font-size: clamp(1.1rem, 5vw, 1.6rem);
+  color: var(--primary-color);
+}
+
+/* ── Nav ─────────────────────────────────────────────────────────────── */
+.nav-container {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.nav-btn {
+  background: var(--light-color);
+  border: 1px solid var(--primary-color);
+  color: var(--primary-color);
+  padding: 9px 14px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 0.9rem;
+  /* minimum touch target */
+  min-height: 40px;
+  white-space: nowrap;
+}
+
+.nav-btn.active {
+  background: var(--primary-color);
+  color: white;
+}
+
+.nav-btn.logout {
+  background: #dc3545;
+  border-color: #dc3545;
+  color: white;
+  /* margin-left: auto only on desktop — on mobile it drops the button to its own misaligned row */
+}
+
+.nav-btn.logout:hover {
+  background: #c82333;
+}
+
+/* ── Content sections ────────────────────────────────────────────────── */
+.content-section {
+  display: none;
+  background: white;
+  padding: 16px;
+  border-radius: var(--border-radius);
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+  margin-bottom: 20px;
+}
+
+.content-section.active {
+  display: block;
+}
+
+.content-section h2 {
+  font-size: clamp(1rem, 4vw, 1.3rem);
+  margin-bottom: 12px;
+}
+
+.content-section h3 {
+  font-size: clamp(0.95rem, 3.5vw, 1.1rem);
+}
+
+/* ── Forms ───────────────────────────────────────────────────────────── */
+.form-group {
+  margin-bottom: 10px;
+}
+
+input,
+textarea,
+select {
+  width: 100%;
+  padding: 10px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  font-size: 1rem;
+  /* Prevents iOS zoom on focus */
+  font-size: max(16px, 1rem);
+}
+
+textarea {
+  min-height: 120px;
+  resize: vertical;
+}
+
+/* ── Buttons (general) ───────────────────────────────────────────────── */
+button {
+  background: var(--primary-color);
+  color: white;
+  border: none;
+  padding: 9px 14px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 0.9rem;
+  min-height: 40px;
+}
+
+.delete-file {
+  background: #dc3545;
+}
+
+.download-file {
+  background: var(--accent-color);
+  color: black;
+}
+
+.view-file {
+  background: var(--secondary-color);
+}
+
+/* ── List items (Subjects / Topics / Notes) ──────────────────────────── */
+.list-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 12px 8px;
+  border-bottom: 1px solid #eee;
+}
+
+.list-item span,
+.list-item > div {
+  flex: 1;
+  min-width: 0;          /* allows text to wrap instead of overflow */
+  word-break: break-word;
+}
+
+.list-item button {
+  flex-shrink: 0;
+}
+
+/* ── File items ──────────────────────────────────────────────────────── */
+.file-item {
+  display: flex;
+  flex-direction: column;   /* stack name and buttons vertically on all sizes */
+  gap: 10px;
+  background: #f0f0f0;
+  padding: 12px;
+  margin-top: 8px;
+  border-radius: 4px;
+}
+
+.file-item > span {
+  word-break: break-all;
+  font-size: 0.95rem;
+}
+
+.file-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.file-actions button,
+.file-actions a.download-file {
+  flex: 1 1 auto;
+  min-width: 70px;
+  text-align: center;
+}
+
+.file-actions a.download-file {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--accent-color);
+  color: black;
+  padding: 9px 14px;
+  border-radius: 4px;
+  text-decoration: none;
+  font-size: 0.9rem;
+  min-height: 40px;
+}
+
+/* ── Tablet and up (≥ 600px) ─────────────────────────────────────────── */
+@media (min-width: 600px) {
+  .container {
+    padding: 20px;
+  }
+
+  header {
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: center;
+    gap: 16px;
+  }
+
+  header h1 {
+    flex-shrink: 0;
+  }
+
+  .nav-container {
+    justify-content: flex-end;
+  }
+
+  .nav-btn.logout {
+    margin-left: auto;
+  }
+
+  .content-section {
+    padding: 20px;
+  }
+
+  /* On wider screens, file items go back to side-by-side */
+  .file-item {
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .file-item > span {
+    flex: 1;
+    margin-right: 10px;
+    word-break: break-word;
+  }
+
+  .file-actions {
+    flex-wrap: nowrap;
+    flex-shrink: 0;
+  }
+
+  .file-actions button,
+  .file-actions a.download-file {
+    flex: none;
+  }
+}
